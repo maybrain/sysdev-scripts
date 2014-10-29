@@ -17,3 +17,10 @@ Various scripts to make life simplier.
 		
 <b>cron_factoria</b>:<br />
 Python Script to connect various DB on various servers in order to select data and insert them on a local DB. No parameters.
+
+<b> reemplazo_csv </b>
+* __enfoque1.py__: parsear csv a dict, recorrer rutas, filtrar tipo, si tipo -> recorrer lineas y cruzar linea con find de clave de dict con valor de clave: NO FUNCIONA CORRECTAMENTE
+
+* __enfoque2.py__: parsear csv a dict, por cada clave de dict abrir rutas, filtro tipo 1 + filtro tipo 2, recorrer lineas, reemplazar clave de dict por clave por linea.
+
+* __reemplazo.py__: pruebas de carga del csv -> dict
