@@ -25,6 +25,6 @@ Python Script to connect various DB on various servers in order to select data a
 
 * __reemplazo.py__: pruebas de carga del csv -> dict
 
-<b> montaje_win </b>
+<b> create_win </b>
 * __montaje_win.py__: recuperar rutas fichero HTML cada 15 minutos por tarea programada. Si existe, se coge zip de la primera, se descarga por wget, se descomprime, se pasa por el empaquetador y se sube por FTP a la segunda ruta
 * __empaquetador.bat__: Magia de Gasca para empaquetar AV para windows
