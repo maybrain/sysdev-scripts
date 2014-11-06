@@ -24,3 +24,7 @@ Python Script to connect various DB on various servers in order to select data a
 * __enfoque2.py__: parsear csv a dict, por cada clave de dict abrir rutas, filtro tipo 1 + filtro tipo 2, recorrer lineas, reemplazar clave de dict por clave por linea.
 
 * __reemplazo.py__: pruebas de carga del csv -> dict
+
+<b> montaje_win </b>
+* __montaje_win.py__: recuperar rutas fichero HTML cada 15 minutos por tarea programada. Si existe, se coge zip de la primera, se descarga por wget, se descomprime, se pasa por el empaquetador y se sube por FTP a la segunda ruta
+* __empaquetador.bat__: Magia de Gasca para empaquetar AV para windows
