@@ -1,0 +1,164 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
+import MySQLdb as mdb
+import datetime
+import logging
+import ftplib
+import os
+import socket
+from azure.storage import BlobService
+
+#CONSTANTES
+logging.basicConfig(filename='/var/log/envio_tienda.log',level=logging.DEBUG)
+
+blob_service = BlobService(account_name='santillanacloud', account_key='zn5bdlRjzpdq5OhkiLsJQcAZocxf2X37NTttoveMqmSQnsCkD9JiCaC1X5lrpG80oEVo3ILkz98HDDLiAd7GAQ==')
+
+tmp_path = "/tmp/"
+
+lock = '/tmp/lock_cron_netex'
+
+def ahora():
+        return str(datetime.datetime.now())
+
+def generalock(lock):
+        open(lock,'a').close()
+        logging.info(ahora()+ " INFO::: crea LOCK")
+
+def testlock(lock):
+        return os.path.exists(lock)
+
+def borralock(lock):
+        os.remove(lock)
+        logging.info(ahora()+ " INFO::: Borra LOCK")
+
+logging.info(ahora()+ " INFO::: BEGIN")
+#si no lock
+if not testlock(lock):
+        generalock(lock)
+        #define conn
+        try:
+                con_main = mdb.connect('10.228.98.29', 'SantillanaGOES', 'pg3Zga9YTb', 'SantillanaGOES')
+                logging.info(ahora()+' INFO:::: Conectado instancia')
+        except mdb.Error, e:
+                logging.error(ahora()+' ERROR:::: Ostion conexion instancia principal.... '+ repr(e))
+                logging.error(ahora()+' ERROR:::: LOCK NO BORRADO. COMPROBAR SERVICIO MYSQL ')
+                exit(1)
+
+
+        query_gedi = "SELECT gedi,timestamp from go_envios_tienda where id_estado=5;"
+
+        with con_main:
+                cur = con_main.cursor(mdb.cursors.DictCursor)
+                try:
+                        cur.execute(query_gedi)
+                        row_gedi = cur.fetchall()
+                        con_main.commit()
+                except mdb.Error, e:
+                        logging.error( ahora() +' ERROR:::: Query GEDI '+ repr(e))
+		logging.info(ahora() + ' INFO:::  Encontrados ' + str(len(row_gedi)))
+		tratados = 0
+                for g in row_gedi:
+			tratados = tratados + 1
+			logging.info(ahora()+ " INFO::: Tratados " +str(tratados)+"/"+ str(len(row_gedi)))
+#               if len(row_gedi)!=0:
+                        gedi = str(g["gedi"])
+                        logging.info(ahora()+ " INFO:::  Conseguido GEDI " +str(gedi))
+                        query_isbn = "SELECT ean_isbn as isbn from go_gedidt where gedi =" +str(gedi)+";"
+                        logging.info(ahora()+ " INFO::: Query ISBN: " + query_isbn)
+                        try:
+                                cur.execute(query_isbn)
+                                row_isbn = cur.fetchall()
+                                con_main.commit()
+                        except mdb.Error, e:
+                                logging.error( ahora() +' ERROR:::: Query ISBN '+ repr(e))
+                        if len(row_isbn)!=0:
+                                isbn = str(row_isbn[0]["isbn"])
+                                logging.info(ahora()+ " INFO::: Conseguido ISBN: " + isbn)
+
+        #                       poner gedi azure -> FTP netex isbn ruta:
+                                logging.info(ahora()+ " INFO::: sbkplat/"+str(gedi)+".zip")
+                                logging.info(ahora()+ " INFO::: Prebusqueda BLOB")
+                                Fed
+                                logging.info(ahora()+ " INFO::: Postbusqueda BLOB blobs encontrados: "+str(len(blobs)))
+                                if len(blobs)==0:
+                                        # borrar lock y exit(0) poniendo un estado en BD que indique que se ha encontrado código, pero que no está subido en azure
+                                        # query_update = "UPDATE go_envios_tienda set id_estado=6 where gedi="+str(gedi)+";"
+                                        logging.info(ahora()+ " INFO::: Blobs vacio")
+                                        logging.info(ahora()+ " INFO::: SALGO")
+                                        query_update = "UPDATE go_envios_tienda set id_estado=6 where gedi="+str(gedi)+";"
+                                        try:
+                                                cur.execute(query_update)
+                                                con_main.commit()
+                                        except mdb.Error, e:
+                                                logging.error( ahora() +' ERROR:::: Query UPDATE estado 6'+ repr(e))
+                                        borralock(lock)
+                                        exit(0)
+
+                                blob = blobs[0]
+				begin = datetime.datetime.now()
+                                blob_service.get_blob_to_path('es-scloud', blob.name, tmp_path+isbn+'.zip')
+				end = datetime.datetime.now()
+				duration = end - begin
+                                logging.info(ahora()+ " INFO::: Descargado BLOB: " + str(blob)+" duración: " + str(duration) + " size "+ tmp_path+isbn+".zip:::"+str(os.path.getsize(tmp_path+isbn+'.zip')))
+        #                       SUBIR A FTP server: ftp.netex.es usuario: libromedia pass: f991r7x
+                                        
+                                #try: except error -> , borrar tmp_path+isbn+'.zip', borrar lock, exit(0) y esperar mejor suerte la próxima llamada
+                                try:
+                                        ftp = ftplib.FTP(host='ftp.netex.es', user='libromedia', passwd='f991r7x')
+                                        logging.info(ahora()+ " INFO::: Conectado FTP")
+                                        pathname=str(g["timestamp"])
+                                        timestamp=pathname
+                                        logging.info(ahora()+ " INFO::: Timestamp: " + str(timestamp))
+                                        ftp.set_pasv(True);
+                                        ftp.cwd(pathname)
+                                        logging.info(ahora()+ " INFO::: Cambia FTP path " + str(pathname))
+                                        f = open(tmp_path+isbn+'.zip')
+					begin_ftp = datetime.datetime.now()
+                                        ftp.storbinary(cmd='STOR '+isbn+'.zip', fp=f)
+                                        f.close()
+					end_ftp = datetime.datetime.now()
+					duration_ftp = end_ftp - begin_ftp
+                                        logging.info(ahora()+ " INFO::: RUTA : "+tmp_path+isbn+'.zip')
+                                        logging.info(ahora()+ " INFO::: Cierra FTP duracion subida "+ str(duration_ftp))
+                                        ftp.quit()
+                                        logging.info(ahora()+ " INFO::: FTP CERRADO")
+                                except socket.gaierror, e:
+                                        logging.error( ahora() +' ERROR:::: CONEXION FTP SERVER CAIDO '+ repr(e))
+                                        os.remove(tmp_path+isbn+'.zip')
+                                        logging.error(ahora()+ " ERROR::: Borra temp zip isbn: " + str(tmp_path+isbn+'.zip'))
+                                        borralock(lock)
+                                        exit(0)
+                                except ftplib.error_perm, e:
+                                        logging.error( ahora() +' ERROR:::: CONEXION FTP CREDENCIALES ' + repr(e))
+                                        if str(repr(e)).find("directory not found")!=-1:
+                                                #Queryupdate estado 7
+                                                query_update = "UPDATE go_envios_tienda set id_estado=7 where gedi="+str(gedi)+";"
+                                                logging.info(ahora()+ " INFO::: Query Update: "+ str(query_update))
+                                                try:
+                                                        cur.execute(query_update)
+                                                        con_main.commit()
+                                                except mdb.Error, e:
+                                                        logging.error( ahora() +' ERROR:::: Query UPDATE '+ repr(e))
+
+                                        os.remove(tmp_path+isbn+'.zip')
+                                        logging.error(ahora()+ " ERROR::: Borra temp zip isbn: " + str(tmp_path+isbn+'.zip'))
+                                        borralock(lock)
+                                        exit(0)
+
+        #       
+                                query_update = "UPDATE go_envios_tienda set id_estado=2 where gedi="+str(gedi)+";"
+                                logging.info(ahora()+ " INFO::: Query Update: "+ str(query_update))
+                                try:
+                                        cur.execute(query_update)
+                                        con_main.commit()
+                                except mdb.Error, e:
+                                        logging.error( ahora() +' ERROR:::: Query UPDATE '+ repr(e))
+
+                                os.remove(tmp_path+isbn+'.zip')
+                                logging.info(ahora()+ " INFO::: Borra zip isbn: " + str(tmp_path+isbn+'.zip'))
+
+        borralock(lock)
+
+logging.info(ahora()+ " INFO::: END")
+
