@@ -28,3 +28,7 @@ Python Script to connect various DB on various servers in order to select data a
 <b> montaje_win </b>
 * __montaje_win.py__: recuperar rutas fichero HTML cada 15 minutos por tarea programada. Si existe, se coge zip de la primera, se descarga por wget, se descomprime, se pasa por el empaquetador y se sube por FTP a la segunda ruta
 * __empaquetador.bat__: Magia de Gasca para empaquetar AV para windows
+
+<b>generate_key.py</b>
+* Interactive program to generate strong random (random.seed = os.urandom(2048) n bytes using different charset selected by the user. Asks the number of bytes to output, the charset to use and the output format (save to file or show on terminal)
+* Parameter -v || --verbose: shows info (<b>REALLY NERD INFO</b>, you're warned) about used charset, generation times and random seed. Not very useful for normal use.
