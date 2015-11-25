@@ -42,3 +42,5 @@ Two modes:
    Dumps all tables onto separate sql files
 * ./script_chop_tables.sh DUMP_FILE.SQL table
    Dumps only specified table on one sql file
+
+Jelouuuuuu
