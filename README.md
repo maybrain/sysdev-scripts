@@ -43,4 +43,6 @@ Two modes:
 * ./script_chop_tables.sh DUMP_FILE.SQL table
    Dumps only specified table on one sql file
 
-Jelouuuuuu 2
+<b>checkmailip.py</b>
+* Get public IP and mail it when it's the first time or it has changed since last time the script was executed.
+* Nice to cronify every day?
