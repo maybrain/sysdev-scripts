@@ -4,6 +4,8 @@ import os
 import smtplib
 import sys
 
+#Hola, Obi!!
+
 from email.MIMEMultipart import MIMEMultipart
 from email.MIMEBase import MIMEBase
 from email.MIMEText import MIMEText
